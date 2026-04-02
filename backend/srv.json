@@ -1,0 +1,23 @@
+[
+  {
+    "name": "ac-zcgkivo-shard-00-01.e3vt7qr.mongodb.net",
+    "port": 27017,
+    "priority": 0,
+    "weight": 0,
+    "type": "SRV"
+  },
+  {
+    "name": "ac-zcgkivo-shard-00-02.e3vt7qr.mongodb.net",
+    "port": 27017,
+    "priority": 0,
+    "weight": 0,
+    "type": "SRV"
+  },
+  {
+    "name": "ac-zcgkivo-shard-00-00.e3vt7qr.mongodb.net",
+    "port": 27017,
+    "priority": 0,
+    "weight": 0,
+    "type": "SRV"
+  }
+]
