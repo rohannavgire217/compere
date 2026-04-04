@@ -8,6 +8,10 @@ const searchProducts = async (req, res) => {
     const { q, category, minPrice, maxPrice, sort, brand } = req.query;
     let query = {};
 
+    if (!q) {
+      return res.status(400).json({ message: "Search query required" });
+    }
+
     if (q) query.$text = { $search: q };
     if (category) query.category = category;
     if (brand) query.brand = new RegExp(brand, 'i');
@@ -32,7 +36,18 @@ const searchProducts = async (req, res) => {
       }).exec();
     }
 
-    res.json(products);
+    const amazon = `https://www.amazon.in/s?k=${q}`;
+    const flipkart = `https://www.flipkart.com/search?q=${q}`;
+    const snapdeal = `https://www.snapdeal.com/search?keyword=${q}`;
+
+    res.json({
+      products, // your DB products
+      external: {
+        amazon,
+        flipkart,
+        snapdeal
+      }
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -112,4 +127,28 @@ const getFeatured = async (req, res) => {
   }
 };
 
-module.exports = { searchProducts, getProduct, getCategories, trackClick, getFeatured };
+// GET /api/products/recognize?url=...
+const recognizeLink = async (req, res) => {
+  try {
+    const { url } = req.query;
+    if (!url) return res.status(400).json({ message: 'URL is required' });
+
+    // Search for a product that contains this URL in its prices array
+    const product = await Product.findOne({
+      "prices.url": { $regex: url, $options: 'i' }
+    });
+
+    if (!product) {
+      // Fallback: try to extract keywords from URL for a text search
+      const keywords = url.replace(/https?:\/\/(www\.)?/, '').split(/[/?=&.]/).filter(s => s.length > 3).join(' ');
+      const fallbackProducts = await Product.find({ $text: { $search: keywords } }).limit(5);
+      return res.json({ product: null, suggestions: fallbackProducts });
+    }
+
+    res.json({ product, suggestions: [] });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { searchProducts, getProduct, getCategories, trackClick, getFeatured, recognizeLink };

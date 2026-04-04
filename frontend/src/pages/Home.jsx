@@ -4,12 +4,12 @@ import api from '../utils/api'
 import ProductCard from '../components/ProductCard'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
+import UnifiedSearch from '../components/UnifiedSearch'
 
 const categories = ['Electronics', 'Smartphones', 'Tablets', 'Laptops', 'Monitors', 'Wearables', 'Kitchen', 'Footwear', 'Computer Accessories']
 
 export default function Home() {
   const [featured, setFeatured] = useState([])
-  const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [wishlist, setWishlist] = useState([])
   const { user } = useAuth()
@@ -21,11 +21,6 @@ export default function Home() {
       api.get('/wishlist').then(({ data }) => setWishlist(data.map(p => p._id))).catch(() => {})
     }
   }, [user])
-
-  const handleSearch = e => {
-    e.preventDefault()
-    if (query.trim()) navigate(`/search?q=${encodeURIComponent(query.trim())}`)
-  }
 
   const toggleWishlist = async (productId) => {
     if (!user) { toast.error('Login to save to wishlist'); return }
@@ -62,21 +57,12 @@ export default function Home() {
             <span className="text-blue-400">Start saving.</span>
           </h1>
           <p className="text-gray-400 text-lg max-w-xl mx-auto mb-10">
-            PricePulse compares prices across Amazon, Flipkart & more — in real time. Earn rewards on every purchase.
+            PricePulse compares prices across Amazon, Flipkart & Snapdeal — in real time.
           </p>
 
-          <form onSubmit={handleSearch} className="max-w-2xl mx-auto flex gap-3">
-            <input
-              type="text"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Try: Sony headphones, iPhone 15, Nike shoes..."
-              className="flex-1 bg-gray-800/80 border border-gray-700 rounded-xl px-5 py-3.5 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500 text-sm"
-            />
-            <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3.5 rounded-xl font-medium text-sm transition-colors whitespace-nowrap">
-              Search →
-            </button>
-          </form>
+          <div className="mt-8">
+             <UnifiedSearch />
+          </div>
 
           {/* Quick stats */}
           <div className="flex justify-center gap-8 mt-10 text-center">

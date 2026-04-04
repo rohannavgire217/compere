@@ -1,160 +1,106 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import api from '../utils/api'
-import ProductCard from '../components/ProductCard'
-import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
 
 export default function Search() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const [products, setProducts] = useState([])
+  const [searchParams] = useSearchParams()
+  const [comparison, setComparison] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [wishlist, setWishlist] = useState([])
-  const [filters, setFilters] = useState({
-    category: searchParams.get('category') || '',
-    minPrice: '',
-    maxPrice: '',
-    sort: 'relevance'
-  })
-  const { user } = useAuth()
   const q = searchParams.get('q') || ''
+  const navigate = useNavigate()
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchComparison = async () => {
+      if (!q) return
       setLoading(true)
       try {
-        const params = new URLSearchParams()
-        if (q) params.set('q', q)
-        if (filters.category) params.set('category', filters.category)
-        if (filters.minPrice) params.set('minPrice', filters.minPrice)
-        if (filters.maxPrice) params.set('maxPrice', filters.maxPrice)
-        if (filters.sort !== 'relevance') params.set('sort', filters.sort)
-        const { data } = await api.get(`/products/search?${params}`)
-        setProducts(data)
+        // Fetch matching platform data
+        const { data } = await api.get(`/engine/compare?query=${encodeURIComponent(q)}`)
+        setComparison(data)
       } catch (err) {
-        toast.error('Failed to fetch products')
+        toast.error('Could not find matches across platforms')
       } finally {
         setLoading(false)
       }
     }
-    fetchProducts()
-  }, [q, filters])
+    fetchComparison()
+  }, [q])
 
-  useEffect(() => {
-    if (user) {
-      api.get('/wishlist').then(({ data }) => setWishlist(data.map(p => p._id))).catch(() => {})
-    }
-  }, [user])
-
-  const toggleWishlist = async (productId) => {
-    if (!user) { toast.error('Login to save to wishlist'); return }
-    try {
-      if (wishlist.includes(productId)) {
-        await api.delete(`/wishlist/${productId}`)
-        setWishlist(w => w.filter(id => id !== productId))
-      } else {
-        await api.post(`/wishlist/${productId}`)
-        setWishlist(w => [...w, productId])
-        toast.success('Added to wishlist ❤️')
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Error')
-    }
+  const handleBuy = (url) => {
+    window.location.href = url
   }
 
-  const categories = ['Electronics', 'Smartphones', 'Tablets', 'Laptops', 'Monitors', 'Wearables', 'Kitchen', 'Footwear', 'Computer Accessories']
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Filters sidebar */}
-        <aside className="lg:w-56 shrink-0">
-          <div className="glass rounded-2xl p-4 space-y-6 sticky top-20">
-            <h3 className="font-semibold text-white">Filters</h3>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-fade-in-up min-h-screen">
+      <div className="flex flex-col items-center justify-center mb-16">
+        <h1 className="font-display text-4xl sm:text-5xl font-extrabold text-white mb-4 text-center tracking-tight">
+          Comparison Results for <br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-600">
+            "{q}"
+          </span>
+        </h1>
+        <div className="w-24 h-1.5 bg-emerald-500/30 rounded-full blur-sm"></div>
+      </div>
 
-            <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wide mb-2 block">Category</label>
-              <select
-                value={filters.category}
-                onChange={e => setFilters(f => ({ ...f, category: e.target.value }))}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500"
-              >
-                <option value="">All Categories</option>
-                {categories.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wide mb-2 block">Price Range (₹)</label>
-              <div className="flex gap-2">
-                <input type="number" placeholder="Min" value={filters.minPrice}
-                  onChange={e => setFilters(f => ({ ...f, minPrice: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500"
-                />
-                <input type="number" placeholder="Max" value={filters.maxPrice}
-                  onChange={e => setFilters(f => ({ ...f, maxPrice: e.target.value }))}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs text-gray-500 uppercase tracking-wide mb-2 block">Sort By</label>
-              <select
-                value={filters.sort}
-                onChange={e => setFilters(f => ({ ...f, sort: e.target.value }))}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500"
-              >
-                <option value="relevance">Relevance</option>
-                <option value="price_asc">Price: Low to High</option>
-                <option value="price_desc">Price: High to Low</option>
-                <option value="popular">Most Popular</option>
-              </select>
-            </div>
-
-            <button
-              onClick={() => setFilters({ category: '', minPrice: '', maxPrice: '', sort: 'relevance' })}
-              className="w-full text-xs text-gray-500 hover:text-red-400 transition-colors py-1"
-            >
-              Clear filters
-            </button>
-          </div>
-        </aside>
-
-        {/* Results */}
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              {q && <h1 className="text-xl font-semibold text-white">Results for "<span className="text-blue-400">{q}</span>"</h1>}
-              {!q && filters.category && <h1 className="text-xl font-semibold text-white">{filters.category}</h1>}
-              {!q && !filters.category && <h1 className="text-xl font-semibold text-white">All Products</h1>}
-              <p className="text-sm text-gray-500 mt-0.5">{products.length} results found</p>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {[...Array(6)].map((_, i) => <div key={i} className="glass rounded-2xl h-64 animate-pulse" />)}
-            </div>
-          ) : products.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="text-5xl mb-4">🔍</div>
-              <h3 className="text-lg font-medium text-gray-300 mb-2">No products found</h3>
-              <p className="text-gray-500 text-sm">Try different keywords or clear your filters</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {products.map(p => (
-                <ProductCard
-                  key={p._id}
-                  product={p}
-                  onWishlist={toggleWishlist}
-                  isWishlisted={wishlist.includes(p._id)}
-                />
-              ))}
-            </div>
-          )}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 space-y-6">
+          <div className="w-16 h-16 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
+          <p className="text-emerald-400 font-bold uppercase tracking-[0.3em] text-[10px] animate-pulse">Scanning Amazon, Flipkart, Snapdeal...</p>
         </div>
+      ) : !comparison || comparison.platforms?.length === 0 ? (
+        <div className="text-center py-32 glass-panel rounded-3xl border border-dashed border-gray-700/50 flex flex-col items-center justify-center relative overflow-hidden max-w-4xl mx-auto">
+          <div className="absolute w-64 h-64 bg-emerald-500/5 rounded-full blur-[80px] -z-10"></div>
+          <div className="text-6xl mb-6">🏝️</div>
+          <h3 className="text-2xl font-bold text-white mb-3">No matching items found</h3>
+          <p className="text-gray-400 text-sm max-w-sm">We couldn't find matches on the verified platforms. Try a different search.</p>
+          <button onClick={() => navigate('/')} className="mt-8 px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-2xl text-sm font-bold transition-all border border-white/10">
+            Try Different Search
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {comparison.platforms.map((platform) => (
+             <div 
+                key={platform.name}
+                className="relative glass-panel rounded-[2rem] p-8 border border-white/5 hover:border-emerald-500/20 shadow-2xl transition-all duration-500 flex flex-col items-center text-center group"
+             >
+                {/* No Images as per strict rule */}
+                <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-6">
+                  <span className="text-xl">🏪</span>
+                </div>
+                
+                <h3 className={`text-2xl font-black mb-2 tracking-tight ${
+                   platform.name === 'Amazon' ? 'text-yellow-500' : 
+                   platform.name === 'Flipkart' ? 'text-blue-400' : 'text-red-400'
+                }`}>
+                  {platform.name}
+                </h3>
+                
+                <div className="mt-auto pt-8 w-full">
+                   <div className="mb-8">
+                      <p className="text-xs text-gray-500 uppercase tracking-widest font-bold mb-1">Starting from</p>
+                      <p className="text-4xl font-black text-white">₹{platform.price?.toLocaleString() || '---'}</p>
+                   </div>
+
+                   <button
+                      onClick={() => handleBuy(platform.url)}
+                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-5 rounded-2xl font-black text-lg transition-all shadow-xl shadow-emerald-600/20 active:scale-95 group flex items-center justify-center gap-3"
+                    >
+                      Buy Now
+                      <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                    </button>
+                </div>
+             </div>
+          ))}
+        </div>
+      )}
+
+      {/* Footer Meta */}
+      <div className="mt-20 border-t border-white/5 pt-10 text-center">
+        <p className="text-[10px] text-gray-600 uppercase tracking-[0.5em] font-medium italic">
+          Aggregated Real-time Data • Verified Redirects • No Image Rendering Enabled
+        </p>
       </div>
     </div>
   )

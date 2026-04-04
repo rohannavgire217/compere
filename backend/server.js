@@ -19,6 +19,7 @@ app.use('/api/prices', require('./routes/prices'));
 app.use('/api/wishlist', require('./routes/wishlist'));
 app.use('/api/rewards', require('./routes/rewards'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/engine', require('./routes/engine'));
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'PricePulse API running' }));
