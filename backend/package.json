@@ -4,7 +4,9 @@
   "description": "PricePulse backend API",
   "main": "server.js",
   "scripts": {
+    "prestart": "node scripts/check-env.js && node scripts/free-port.js",
     "start": "node server.js",
+    "predev": "node scripts/free-port.js",
     "dev": "nodemon server.js",
     "seed": "node database/seed.js"
   },

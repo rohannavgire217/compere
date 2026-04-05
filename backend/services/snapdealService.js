@@ -1,5 +1,5 @@
 const Product = require('../models/Product');
-const fuse = require('fuse.js');
+const Fuse = require('fuse.js');
 
 /**
  * PRODUCTION SNAPDEAL MATCHING SERVICE
@@ -7,7 +7,7 @@ const fuse = require('fuse.js');
  */
 const searchSnapdeal = async (query) => {
   const products = await Product.find({});
-  const fuseSearch = new fuse(products, { keys: ['name', 'brand'], threshold: 0.3 });
+  const fuseSearch = new Fuse(products, { keys: ['name', 'brand'], threshold: 0.3 });
   const matched = fuseSearch.search(query);
 
   if (matched.length > 0) {

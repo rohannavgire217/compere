@@ -1,6 +1,9 @@
 const Product = require('../models/Product');
 const User = require('../models/User');
 const Reward = require('../models/Reward');
+const mongoose = require('mongoose');
+
+const isDbConnected = () => mongoose.connection.readyState === 1;
 
 // GET /api/products/search?q=earbuds&category=&minPrice=&maxPrice=&sort=
 const searchProducts = async (req, res) => {
@@ -119,6 +122,10 @@ const trackClick = async (req, res) => {
 // GET /api/products/featured
 const getFeatured = async (req, res) => {
   try {
+    if (!isDbConnected()) {
+      return res.json([]);
+    }
+
     const products = await Product.find({}).sort({ viewCount: -1 }).limit(8);
     res.json(products);
   } catch (err) {

@@ -1,5 +1,5 @@
 const Product = require('../models/Product');
-const fuse = require('fuse.js');
+const Fuse = require('fuse.js');
 
 /**
  * PRODUCTION AMAZON MATCHING SERVICE
@@ -12,7 +12,7 @@ const searchAmazon = async (query) => {
     keys: ['name', 'brand', 'tags'],
     threshold: 0.3 // Strict matching
   };
-  const fuseSearch = new fuse(products, options);
+  const fuseSearch = new Fuse(products, options);
   const matched = fuseSearch.search(query);
 
   if (matched.length > 0) {
