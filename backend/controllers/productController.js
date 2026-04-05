@@ -11,7 +11,6 @@ const searchProducts = async (req, res) => {
     if (!q) {
       return res.status(400).json({ message: "Search query required" });
     }
-
     if (q) query.$text = { $search: q };
     if (category) query.category = category;
     if (brand) query.brand = new RegExp(brand, 'i');
@@ -152,3 +151,4 @@ const recognizeLink = async (req, res) => {
 };
 
 module.exports = { searchProducts, getProduct, getCategories, trackClick, getFeatured, recognizeLink };
+
